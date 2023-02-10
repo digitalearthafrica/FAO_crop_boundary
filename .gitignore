@@ -5,3 +5,4 @@
 1_Tune_hyperparameters_model_evaluation/results/
 2_Predict_all_postprocessing/results/
 superseded/
+*.pyc
