@@ -1,0 +1,7 @@
+0_Data_preparation/input_data/
+0_Data_preparation/results/
+.ipynb_checkpoints/
+1_Tune_hyperparameters_model_evaluation/model_weights/
+1_Tune_hyperparameters_model_evaluation/results/
+2_Predict_all_postprocessing/results/
+superseded/
