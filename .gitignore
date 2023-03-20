@@ -1,0 +1,7 @@
+0_Data_preparation/results/
+.ipynb_checkpoints/
+1_Identify_months_thresholds_model_evaluation/model_weights/
+1_Identify_months_thresholds_model_evaluation/results/
+2_Predict_all_postprocessing/results/
+superseded/
+*.pyc
