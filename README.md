@@ -9,3 +9,5 @@ This repository contains a scalable workflow for crop boundary delineation using
 * 1_Identify_months_thresholds_model_evaluation: contains notebooks and dependent modules to identify most suitable months and fine-tune field boundary and extent probabilities thresholds for crop field instance segmentation, using the validation dataset and pre-trained model weight. Evaluation of the model predictions and instance segmentation is also included.  
 
 * 2_Predict_all_postprocessing: contains notebooks to apply predictions and instance segmentation on all Planet image chunks within the AOI and post-processing including masking the crop field instances using DE Africa crop mask layer. 
+
+Environment dependencies are listed in 1_Identify_months_thresholds_model_evaluation/decode/requirements.txt
