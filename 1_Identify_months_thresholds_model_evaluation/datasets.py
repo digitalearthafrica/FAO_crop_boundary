@@ -55,9 +55,10 @@ class Planet_Dataset_No_labels(gluon.data.Dataset):
     def extract_id_date(self,img_path):
         '''return image chunk id and acquisition data information as ndarray
         this function is very customised and depending on your file naming convention'''
-        img_name=os.path.basename(img_path).replace('.','_')
+        img_name=os.path.basename(img_path).replace('.','_').replace('-','_')
         name_elements=img_name.split('_')
         id_date=[int(name_elements[i]) for i in [-5,-4,-3,-2]]
+        id_date=[int(name_elements[i]) for i in [-6,-5,-3,-2]]
     #     chunk_id_row=int(name_elements[-3])
     #     chunk_id_col=int(name_elements[-2])
     #     year=int(name_elements[-5])
