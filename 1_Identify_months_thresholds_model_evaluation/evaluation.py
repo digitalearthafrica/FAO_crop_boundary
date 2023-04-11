@@ -70,7 +70,9 @@ def get_accuracy_scores(extent_true,boundary_true,extent_prob_predicted):
     f1 = mx.metric.F1()
     mcc = mx.metric.MCC()
     # binarise predicted extent
-    extent_predicted=np.ceil(extent_prob_predicted-0.5)
+    # NOTE: you may want to fine tune this 0.5 threshold to get a fair judgement on semantic segmentation results
+    # e.g. when your predicted probabilities are overall higher or lower
+    extent_predicted=np.ceil(extent_prob_predicted-0.5) 
     # define evaluation mask area, outside of which won't be evaluated
     # evaluation_mask=(extent_predicted==segmentation.clear_border(extent_predicted,bgval=0))
     # evaluation_mask=(instance_predicted==segmentation.clear_border(instance_predicted,buffer_size=2,bgval=0))
