@@ -15,5 +15,6 @@ The notebooks are organized in three folders and numbered according to the order
 
 Citation:
 
-Wang S, Waldner F, Lobell DB. Unlocking Large-Scale Crop Field Delineation in Smallholder Farming Systems with Transfer Learning and Weak Supervision. Remote Sensing. 2022; 14(22):5738. https://doi.org/10.3390/rs14225738
+Wang S, Waldner F, Lobell DB. Unlocking Large-Scale Crop Field Delineation in Smallholder Farming Systems with Transfer Learning and Weak Supervision. Remote Sensing. 2022; 14(22):5738. https://doi.org/10.3390/rs14225738  
+
 Waldner F, Diakogiannis FI, Batchelor K, Ciccotosto-Camp M, Cooper-Williams E, Herrmann C, Mata G, Toovey A. Detect, Consolidate, Delineate: Scalable Mapping of Field Boundaries Using Satellite Images. Remote Sensing. 2021; 13(11):2197. https://doi.org/10.3390/rs13112197.
