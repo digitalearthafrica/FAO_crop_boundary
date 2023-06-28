@@ -3,7 +3,7 @@ Scalable workflow for crop boundary delineation using a pre-trained deep learnin
 
 ## Description  
 
-This repository contains a scalable workflow for crop boundary delineation using CSIRO's [DECODE model](https://www.mdpi.com/2072-4292/13/11/2197) and [pre-trained weight](https://arxiv.org/abs/2201.04771). The workflow is implemented as Python notebooks that are desgined to run in the DE Africa analysis sandbox. Ensure your sandbox environment has the dependency packages listed in the 'requirements.txt' installed before running.
+This repository contains a scalable workflow for crop boundary delineation using CSIRO's [DECODE model](https://www.mdpi.com/2072-4292/13/11/2197) and pre-trained weights based on this [research paper](https://www.mdpi.com/2072-4292/14/22/5738). The workflow is implemented as Python notebooks that are desgined to run in the DE Africa analysis sandbox. Ensure your sandbox environment has the dependency packages listed in the 'requirements.txt' installed before running.
 
 The notebooks are organized in three folders and numbered according to the order they should be run:  
 
@@ -12,3 +12,8 @@ The notebooks are organized in three folders and numbered according to the order
 * 1_Identify_months_thresholds_model_evaluation: contains notebooks and Python scripts to apply the model with pre-trained weights over locations with validation data, evaluate the model predictions, and use the validation results to identify the most suitable months of mosaic data and the optimal thresholds for crop field instance segmentation.
 
 * 2_Predict_all_postprocessing: contains notebooks to apply field extent and boundary identification and instance segmentation on all transfromed Planet input images, mask with DE Africa Cropland Extent Map and merge the results into final maps.
+
+Citation:
+
+Wang S, Waldner F, Lobell DB. Unlocking Large-Scale Crop Field Delineation in Smallholder Farming Systems with Transfer Learning and Weak Supervision. Remote Sensing. 2022; 14(22):5738. https://doi.org/10.3390/rs14225738
+Waldner F, Diakogiannis FI, Batchelor K, Ciccotosto-Camp M, Cooper-Williams E, Herrmann C, Mata G, Toovey A. Detect, Consolidate, Delineate: Scalable Mapping of Field Boundaries Using Satellite Images. Remote Sensing. 2021; 13(11):2197. https://doi.org/10.3390/rs13112197.
