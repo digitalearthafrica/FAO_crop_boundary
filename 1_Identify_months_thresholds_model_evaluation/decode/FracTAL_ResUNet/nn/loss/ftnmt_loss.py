@@ -57,4 +57,3 @@ class ftnmt_loss(Loss):
         result = 0.5*(l1+l2) 
          
         return  1. - result
-    

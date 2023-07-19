@@ -1,6 +1,8 @@
 import numpy as np
 import mxnet as mx
 import matplotlib.pyplot as plt
+from tqdm import tqdm
+from mxnet import autograd
 
 def Calculate_IoUs(instances_true, instance_predicted, plot=False):
     """
@@ -105,3 +107,171 @@ def get_accuracy_scores(extent_true,boundary_true,extent_prob_predicted):
     # MCC metric
     mcc.update(mx.nd.array(extent_true_masked), mx.nd.array(probabilities))
     return accuracy,f1,mcc
+
+def dice_coef(x, y):
+    '''function to calculate dice coefficient / F1 score'''
+    if type(x).__module__ == 'numpy':
+        intersection = np.logical_and(x, y)
+        return 2. * np.sum(intersection) / (np.sum(x) + np.sum(y))
+    else:
+        intersection = mx.ndarray.op.broadcast_logical_and(x, y)
+        return 2. * mx.nd.sum(intersection) / (mx.nd.sum(x) + mx.nd.sum(y))
+
+def train_model_per_epoch(train_dataloader, model, ftnmt_loss, trainer, epoch, args):
+    """
+    function to train the model and calculate training scores for one epoch
+    
+    INPUTS:
+    val_dataloader: DataLoader to iterate through the dataset in mini-batches
+    model: the nn model
+    mtsk_loss: multitask tanimoto loss function: takes in prediction and true label
+    trainer: 
+    epoch: epoch number
+    args: other arguments including batch size, cpu/gpu and visulisation
+    """
+    # initialize metrics
+    cumulative_loss = 0
+    accuracy = mx.metric.Accuracy()
+    f1 = mx.metric.F1()
+    mcc = mx.metric.MCC()
+    dice = mx.metric.CustomMetric(feval=dice_coef, name="Dice")
+    if args['ctx_name'] == 'cpu':
+        ctx = mx.cpu()
+    else:
+        ctx = mx.gpu(args['gpu'])
+    
+    # training set
+    for batch_i, (img, extent, boundary, distance, mask) in enumerate(
+        tqdm(train_dataloader, desc='Training epoch {}'.format(epoch))):
+        
+        with autograd.record():
+            # make a copy if the variable currently lives in the wrong context
+            img = img.as_in_context(ctx) 
+            extent = extent.as_in_context(ctx)
+            boundary = boundary.as_in_context(ctx)
+            distance = distance.as_in_context(ctx)
+            mask = mask.as_in_context(ctx)
+            
+            # predicted outputs: field extent probability, field boundary and distance to boundary
+            logits, bound, dist = model(img)
+        
+            # Fractal Tanimoto loss (basically Jaccard distance?)
+            loss_extent = mx.nd.sum(ftnmt_loss(logits*mask, extent*mask))
+            loss_boundary = mx.nd.sum(ftnmt_loss(bound*mask, boundary*mask))
+            loss_distance = mx.nd.sum(ftnmt_loss(dist*mask, distance*mask))
+            loss = 0.33 * (loss_extent + loss_boundary + loss_distance)
+            
+#             # Multi-task fractal Tanimoto loss: didn't work
+#             labels = mx.nd.concat(*[extent,boundary,distance],dim=1)
+#             predictions=mx.nd.concat(*[logits,bound,dist],dim=1)
+#             loss=mtsk_loss(predictions,labels)
+
+        # compute the gradients w.r.t. the loss function 
+        loss.backward()
+
+        # Makes one step of parameter update
+        trainer.step(args['batch_size'])
+        
+        # update cummulative loss 
+        cumulative_loss += mx.nd.sum(loss).asscalar()
+        
+        # mask out unlabeled pixels
+        logits_reshaped = logits.reshape((logits.shape[0], -1))
+        extent_reshaped = extent.reshape((extent.shape[0], -1))
+        mask_reshaped = mask.reshape((mask.shape[0], -1))
+
+        nonmask_idx = mx.np.nonzero(mask_reshaped.as_np_ndarray())
+        nonmask_idx = mx.np.stack(nonmask_idx).as_nd_ndarray().as_in_context(ctx)
+        logits_masked = mx.nd.gather_nd(logits_reshaped, nonmask_idx)
+        extent_masked = mx.nd.gather_nd(extent_reshaped, nonmask_idx)
+
+        # update metrics based on every batch
+        # update accuracy
+        extent_predicted_classes = mx.nd.ceil(logits_masked - 0.5)
+        accuracy.update(extent_masked, extent_predicted_classes)
+
+        # f1 score
+        probabilities = mx.nd.stack(1 - logits_masked, logits_masked, axis=1)
+        f1.update(extent_masked, probabilities)
+
+        # MCC metric
+        mcc.update(extent_masked, probabilities)
+
+        # Dice score
+        dice.update(extent_masked, extent_predicted_classes)
+        
+    return cumulative_loss, accuracy, f1, mcc, dice
+
+def evaluate_model_per_epoch(val_dataloader, model, ftnmt_loss, epoch, args):
+    """
+    function to run model instance and calculate evaluation scores for one epoch
+    
+    INPUTS:
+    val_dataloader: DataLoader to iterate through the dataset in mini-batches
+    model: the nn model
+    mtsk_loss: tanimoto loss function: takes in prediction and true label
+    epoch: epoch number
+    args: other arguments including batch size, cpu/gpu and visulisation
+    """
+    
+    # initialize metrics
+    cumulative_loss = 0
+    accuracy = mx.metric.Accuracy()
+    f1 = mx.metric.F1()
+    mcc = mx.metric.MCC()
+    dice = mx.metric.CustomMetric(feval=dice_coef, name="Dice")
+    
+    if args['ctx_name'] == 'cpu':
+        ctx = mx.cpu()
+    else:
+        ctx = mx.gpu(args['gpu'])
+    
+    # validation set
+    for batch_i, (img, extent, boundary, distance, mask) in enumerate(
+        tqdm(val_dataloader, desc='Validation epoch {}'.format(epoch))):
+
+        # make a copy if the variable currently lives in the wrong context
+        img = img.as_in_context(ctx)
+        extent = extent.as_in_context(ctx)
+        boundary = boundary.as_in_context(ctx)
+        distance = distance.as_in_context(ctx)
+        mask = mask.as_in_context(ctx)
+        
+        # predicted outputs: field extent probability, field boundary probability and distance to boundary
+        logits, bound, dist = model(img)
+        
+        # Fractal Tanimoto loss (basically Jaccard distance?)
+        loss_extent = mx.nd.sum(ftnmt_loss(logits*mask,extent*mask))
+        loss_boundary = mx.nd.sum(ftnmt_loss(bound*mask,boundary*mask))
+        loss_distance = mx.nd.sum(ftnmt_loss(dist*mask,distance*mask))
+        loss = 0.33 * (loss_extent + loss_boundary + loss_distance)
+            
+        # update cummulative loss
+        cumulative_loss += mx.nd.sum(loss).asscalar()
+
+        # mask out unlabeled pixels
+        logits_reshaped = logits.reshape((logits.shape[0], -1))
+        extent_reshaped = extent.reshape((extent.shape[0], -1))
+        mask_reshaped = mask.reshape((mask.shape[0], -1))
+
+        nonmask_idx = mx.np.nonzero(mask_reshaped.as_np_ndarray())
+        nonmask_idx = mx.np.stack(nonmask_idx).as_nd_ndarray().as_in_context(ctx)
+        logits_masked = mx.nd.gather_nd(logits_reshaped, nonmask_idx)
+        extent_masked = mx.nd.gather_nd(extent_reshaped, nonmask_idx)
+        
+        # update metrics based on every batch
+        # update accuracy
+        extent_predicted_classes = mx.nd.ceil(logits_masked - 0.5)
+        accuracy.update(extent_masked, extent_predicted_classes)
+
+        # f1 score
+        probabilities = mx.nd.stack(1 - logits_masked, logits_masked, axis=1)
+        f1.update(extent_masked, probabilities)
+
+        # MCC metric
+        mcc.update(extent_masked, probabilities)
+
+        # Dice score
+        dice.update(extent_masked, extent_predicted_classes)
+        
+    return cumulative_loss, accuracy, f1, mcc, dice
